@@ -4,11 +4,15 @@ import com.example.task_manager.dto.TaskRequest;
 import com.example.task_manager.dto.TaskResponse;
 import com.example.task_manager.exception.ResourceNotFoundException;
 import com.example.task_manager.task.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class TaskService {
+
+    private static final Logger logger = LoggerFactory.getLogger(TaskService.class);
 
     private final TaskRepository taskRepository;
     private final CategoryRepository categoryRepository;
@@ -28,7 +32,9 @@ public class TaskService {
         TaskStatus status = request.status() != null ? request.status() : TaskStatus.TODO;
         Task task = new Task(request.title(), request.description(), status, request.dueDate());
         task.setCategory(resolveCategory(request.categoryId()));
-        return TaskResponse.from(taskRepository.save(task));
+        TaskResponse response = TaskResponse.from(taskRepository.save(task));
+        logger.info("Created task id={}", response.id());
+        return response;
     }
 
     @Transactional
@@ -36,12 +42,15 @@ public class TaskService {
         Task task = findEntity(id);
         task.update(request.title(), request.description(), request.status(), request.dueDate());
         task.setCategory(resolveCategory(request.categoryId()));
-        return TaskResponse.from(task);        // no save() call needed, see below
+        TaskResponse response = TaskResponse.from(task);        // no save() call needed, see below
+        logger.info("Updated task id={}", response.id());
+        return response;
     }
 
     @Transactional
     public void delete(Long id) {
         taskRepository.delete(findEntity(id));
+        logger.info("Deleted task id={}", id);
     }
 
     private Task findEntity(Long id) {
